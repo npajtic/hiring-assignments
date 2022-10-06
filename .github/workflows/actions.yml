@@ -9,8 +9,6 @@ env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
   KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
   KUBE_NAMESPACE: production
-  ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
-  ECR_REPOSITORY: dummy-ecr
 
 jobs:                                            
   release:                                       
@@ -37,12 +35,18 @@ jobs:
     - name: Build, tag, and push image to Amazon ECR
       id: build-image
       env:
-        REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        REPOSITORY: dummy-ecr
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: dummy-ecr
         IMAGE_TAG: ${{ github.sha }}
       run: |
-        echo "Registry is $REGISTRY .."
         cd sre/dummy-pdf-or-png
-        docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
-        docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
-
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+    - name: Deploy to Amazon ECS
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: k8s-dummy-pdf-or-png.json
+        service: dummy-png-pdf-eks
+        cluster: dummy-png-pdf-eks
+        wait-for-service-stability: true
