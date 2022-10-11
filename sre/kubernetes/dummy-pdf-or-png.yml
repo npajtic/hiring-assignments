@@ -1,0 +1,35 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dummy-pdf-or-png
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dummy-pdf-or-png
+  template:
+    metadata:
+      name: dummy-pdf-or-png
+      labels:
+        app: dummy-pdf-or-png
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: dummy-pdf-or-png
+        image: 526390222703.dkr.ecr.eu-central-1.amazonaws.com/dummy-ecr:latest
+        resources:
+          limits:
+            memory: "50Mi"
+            cpu: "0.2"
+        ports:
+        - name: liveness-port
+          containerPort: 3000
+          protocol: TCP
+        livenessProbe:
+          tcpSocket:
+            port: liveness-port
+          initialDelaySeconds: 5
+          failureThreshold: 5
+          periodSeconds: 10
